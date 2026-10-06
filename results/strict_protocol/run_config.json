@@ -1,0 +1,80 @@
+{
+  "protocol": "strict",
+  "tasks": [
+    "binary",
+    "multiclass"
+  ],
+  "modes": [
+    "baseline",
+    "proposal"
+  ],
+  "models": [
+    "DT",
+    "RF",
+    "ET",
+    "XGB"
+  ],
+  "folds": 10,
+  "max_per_class_override": null,
+  "sample_frac": null,
+  "config": {
+    "random_state": 42,
+    "n_jobs": -1,
+    "data": {
+      "raw_csv": "data/raw/CICIDS2017_merged_clean.csv",
+      "processed_dir": "data/processed",
+      "label_column": "Label",
+      "chunk_size": 500000,
+      "merge_web_attacks": true,
+      "min_class_count": 0
+    },
+    "oversampling": {
+      "max_per_class_binary": 1000000,
+      "max_per_class_multiclass": 200000
+    },
+    "sfe": {
+      "n_clusters": 8,
+      "gmm_components": 8,
+      "gmm_covariance": "diag",
+      "gmm_reg_covar": 0.001,
+      "gmm_fit_samples": 200000,
+      "kmeans_batch_size": 8192
+    },
+    "pca": {
+      "n_components": 10,
+      "fit_samples": 1000000
+    },
+    "experiment": {
+      "protocol": "paper",
+      "tasks": [
+        "binary",
+        "multiclass"
+      ],
+      "modes": [
+        "baseline",
+        "proposal"
+      ],
+      "models": [
+        "DT",
+        "RF",
+        "ET",
+        "XGB"
+      ],
+      "folds": 10,
+      "holdout_test_size": 0.2
+    },
+    "model_params": {
+      "RF": {
+        "n_estimators": 100
+      },
+      "ET": {
+        "n_estimators": 100
+      },
+      "XGB": {
+        "n_estimators": 100,
+        "max_depth": 6,
+        "learning_rate": 0.3
+      }
+    }
+  }
+}

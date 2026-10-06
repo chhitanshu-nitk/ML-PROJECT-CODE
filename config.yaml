@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------
+# Central configuration (CIC-IDS2017 replication of Talukder et al., 2024)
+# Paths are relative to the project root unless absolute.
+# ---------------------------------------------------------------
+random_state: 42
+n_jobs: -1
+
+data:
+  raw_csv: data/raw/CICIDS2017_merged_clean.csv   # <- put your full merged CSV here
+  processed_dir: data/processed
+  label_column: Label
+  chunk_size: 500000          # rows per chunk while reading (keeps RAM low)
+  merge_web_attacks: true     # Brute Force / XSS / SQL Injection -> "Web Attack" (paper: 13 classes)
+  min_class_count: 0          # >0 merges classes with fewer rows into "Other" (0 = keep Heartbleed/Infiltration)
+
+# Random Oversampling (RO).
+# null  -> balance every class up to the majority-class size (exact paper scale: ~2M rows/class,
+#          needs ~64 GB RAM and very long training time)
+# int N -> every class is brought to min(N, majority). Larger classes are randomly down-sampled to N,
+#          smaller ones are oversampled with replacement. Practical on laptops/workstations.
+oversampling:
+  max_per_class_binary: 1000000
+  max_per_class_multiclass: 200000
+
+# Stacking Feature Embedding (SFE): cluster ids from K-Means + Gaussian Mixture appended as 2 meta-features.
+# (The paper does not state the number of clusters; these are tunable assumptions.)
+sfe:
+  n_clusters: 8
+  gmm_components: 8
+  gmm_covariance: diag
+  gmm_reg_covar: 0.001
+  gmm_fit_samples: 200000
+  kmeans_batch_size: 8192
+
+pca:
+  n_components: 10            # paper: 10 components for every dataset
+  fit_samples: 1000000        # PCA is fitted on at most this many rows (transform is applied to all)
+
+experiment:
+  protocol: paper             # paper | strict   (see README: "paper" reproduces the paper's numbers)
+  tasks: [binary, multiclass]
+  modes: [baseline, proposal] # baseline = "All Features" (scaling only); proposal = RO + SFE + PCA
+  models: [DT, RF, ET, XGB]
+  folds: 10                   # 10-fold CV as in the paper (use 1 for a single hold-out split)
+  holdout_test_size: 0.2      # only used when folds <= 1
+
+# Optional per-model hyper-parameter overrides (paper does not report them -> library defaults used)
+model_params:
+  RF: {n_estimators: 100}
+  ET: {n_estimators: 100}
+  XGB: {n_estimators: 100, max_depth: 6, learning_rate: 0.3}
