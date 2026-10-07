@@ -13,14 +13,18 @@ data:
   merge_web_attacks: true     # Brute Force / XSS / SQL Injection -> "Web Attack" (paper: 13 classes)
   min_class_count: 0          # >0 merges classes with fewer rows into "Other" (0 = keep Heartbleed/Infiltration)
 
-# Random Oversampling (RO).
-# null  -> balance every class up to the majority-class size (exact paper scale: ~2M rows/class,
-#          needs ~64 GB RAM and very long training time)
-# int N -> every class is brought to min(N, majority). Larger classes are randomly down-sampled to N,
-#          smaller ones are oversampled with replacement. Practical on laptops/workstations.
-oversampling:
-  max_per_class_binary: 1000000
-  max_per_class_multiclass: 200000
+# The two experiment profiles are deliberately separate:
+# paper  -> all classes and majority-size random oversampling, matching the paper protocol.
+# custom -> strict split-first evaluation, selected classes removed, practical caps.
+pipelines:
+  paper:
+    excluded_classes: []
+    max_per_class_binary: null
+    max_per_class_multiclass: null
+  custom:
+    excluded_classes: [Heartbleed, Infiltration]
+    max_per_class_binary: 100000
+    max_per_class_multiclass: 10000
 
 # Stacking Feature Embedding (SFE): cluster ids from K-Means + Gaussian Mixture appended as 2 meta-features.
 # (The paper does not state the number of clusters; these are tunable assumptions.)
@@ -37,7 +41,7 @@ pca:
   fit_samples: 1000000        # PCA is fitted on at most this many rows (transform is applied to all)
 
 experiment:
-  protocol: paper             # paper | strict   (see README: "paper" reproduces the paper's numbers)
+  protocol: paper             # paper | custom
   tasks: [binary, multiclass]
   modes: [baseline, proposal] # baseline = "All Features" (scaling only); proposal = RO + SFE + PCA
   models: [DT, RF, ET, XGB]

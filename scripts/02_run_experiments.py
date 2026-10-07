@@ -1,7 +1,7 @@
 """Run the experiments (baseline vs proposal, binary + multiclass, DT/RF/ET/XGB).
 
     python scripts/02_run_experiments.py --protocol paper  --name paper_protocol
-    python scripts/02_run_experiments.py --protocol strict --name strict_protocol
+    python scripts/02_run_experiments.py --protocol custom --name custom_strict
     python scripts/02_run_experiments.py --folds 3 --models DT ET --max-per-class 50000 --name quick
 """
 import _bootstrap  # noqa: F401
@@ -13,7 +13,7 @@ from ids.utils import load_config, resolve
 
 p = argparse.ArgumentParser()
 p.add_argument("--config")
-p.add_argument("--protocol", choices=["paper", "strict"])
+p.add_argument("--protocol", choices=["paper", "custom"])
 p.add_argument("--tasks", nargs="+", choices=["binary", "multiclass"])
 p.add_argument("--modes", nargs="+", choices=["baseline", "proposal"])
 p.add_argument("--models", nargs="+", choices=["DT", "RF", "ET", "XGB"])

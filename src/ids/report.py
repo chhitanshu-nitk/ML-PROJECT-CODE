@@ -9,7 +9,10 @@ import numpy as np
 import pandas as pd
 
 
-METRICS = ["accuracy", "precision", "recall", "f1", "f1_weighted", "auc"]
+METRICS = [
+    "accuracy", "balanced_accuracy", "precision", "recall", "f1",
+    "f1_weighted", "auc", "mcc",
+]
 
 
 def _md(df: pd.DataFrame) -> str:
@@ -30,8 +33,13 @@ def write_reports(df: pd.DataFrame, out_dir: Path, protocol: str) -> pd.DataFram
 
     comp = summary[["task", "mode", "model"]].copy()
     comp["acc_%"] = (summary["accuracy"] * 100).round(2)
+    comp["balanced_acc_%"] = (summary["balanced_accuracy"] * 100).round(2)
+    comp["macro_precision_%"] = (summary["precision"] * 100).round(2)
+    comp["macro_recall_%"] = (summary["recall"] * 100).round(2)
     comp["macro_f1_%"] = (summary["f1"] * 100).round(2)
+    comp["weighted_f1_%"] = (summary["f1_weighted"] * 100).round(2)
     comp["auc_%"] = (summary["auc"] * 100).round(2)
+    comp["mcc"] = summary["mcc"].round(4)
     comp.to_csv(out_dir / "summary_pct.csv", index=False)
 
     md = [f"# Results (protocol = `{protocol}`)\n",
@@ -39,8 +47,11 @@ def write_reports(df: pd.DataFrame, out_dir: Path, protocol: str) -> pd.DataFram
           "`mode=baseline` is the paper's 'All Features', `mode=proposal` is RO + SFE + PCA.\n"]
     for task in summary["task"].unique():
         t = summary[summary["task"] == task]
-        tbl = t[["mode", "model"] + METRICS[:4] + ["auc"]].copy()
-        for c in METRICS[:4] + ["auc"]:
+        tbl = t[["mode", "model"] + METRICS].copy()
+        for c in METRICS:
+            if c == "mcc":
+                tbl[c] = tbl[c].round(4)
+                continue
             tbl[c] = (tbl[c] * 100).round(2)
         md += [f"## {task}\n", _md(tbl), ""]
     (out_dir / "results.md").write_text("\n".join(md), encoding="utf-8")

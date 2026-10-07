@@ -4,7 +4,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import (accuracy_score, precision_recall_fscore_support, roc_auc_score, roc_curve)
+import pandas as pd
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    confusion_matrix,
+    matthews_corrcoef,
+    precision_recall_fscore_support,
+    roc_auc_score,
+    roc_curve,
+)
 from sklearn.preprocessing import label_binarize
 
 
@@ -35,8 +44,45 @@ def _auc(y, proba, n_classes):
 def compute_metrics(y_true, y_pred, proba, n_classes: int) -> dict:
     p, r, f, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
     fw = precision_recall_fscore_support(y_true, y_pred, average="weighted", zero_division=0)[2]
-    return {"accuracy": float(accuracy_score(y_true, y_pred)), "precision": float(p), "recall": float(r),
-            "f1": float(f), "f1_weighted": float(fw), "auc": _auc(y_true, proba, n_classes)}
+    return {
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
+        "precision": float(p),
+        "recall": float(r),
+        "f1": float(f),
+        "f1_weighted": float(fw),
+        "auc": _auc(y_true, proba, n_classes),
+        "mcc": float(matthews_corrcoef(y_true, y_pred)),
+    }
+
+
+def per_class_metrics(y_true, y_pred, class_names) -> "pd.DataFrame":
+    """Return one-vs-rest metrics; recall is per-class accuracy/sensitivity."""
+    labels = np.arange(len(class_names))
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, zero_division=0
+    )
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    rows = []
+    for i, name in enumerate(class_names):
+        true_positive = cm[i, i]
+        false_positive = cm[:, i].sum() - true_positive
+        false_negative = cm[i, :].sum() - true_positive
+        true_negative = cm.sum() - true_positive - false_positive - false_negative
+        specificity = (
+            true_negative / (true_negative + false_positive)
+            if true_negative + false_positive else 0.0
+        )
+        rows.append({
+            "class_id": i,
+            "class": name,
+            "precision": float(precision[i]),
+            "recall_class_accuracy": float(recall[i]),
+            "f1": float(f1[i]),
+            "specificity": float(specificity),
+            "support": int(support[i]),
+        })
+    return pd.DataFrame(rows)
 
 
 def plot_confusion_matrix(cm, names, path, title=""):
